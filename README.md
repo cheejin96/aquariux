@@ -6,6 +6,19 @@ This is for Auqrius Technical Test at below
 # API
 Below is the screenshots that show the steps to call the API
 
+### Add Client
+| API | Details |
+| --- | --- |
+| URL | /client/add |
+| TYPE | POOST |
+| Description | This API is use to add new client. |
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| name | String | Client's name |
+
+![image](https://github.com/cheejin96/aquariux/assets/20693378/d4676ca9-14b3-49a9-86a9-151c5fbc67de)
+
 ### Stock list
 | API | Details |
 | --- | --- |
