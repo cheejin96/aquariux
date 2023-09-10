@@ -5,7 +5,6 @@ import org.springframework.stereotype.Service;
 
 import com.playground.dao.ClientDao;
 import com.playground.model.Client;
-import com.playground.repo.ClientRepository;
 
 import jakarta.annotation.PostConstruct;
 
@@ -25,14 +24,24 @@ public class ClientService {
 	}
 	
 	public Client getClientById(int id) {
+		System.out.println("getClientById | entry ...");
 		Client client = null;
 		if(clientDao.findById(id).isPresent()) {
 			client = clientDao.findById(id).get();
 		}
+		System.out.println("getClientById | exit ...");
 		return client;
 	}
 	
 	public void saveClient(Client client) {
 		clientDao.saveAndFlush(client);
+	}
+	
+	public Client saveClient(String name) {
+		System.out.println("saveClient | entry ...");
+		Client client = new Client(name);
+		client = clientDao.saveAndFlush(client);
+		System.out.println("saveClient | exit ...");
+		return client;
 	}
 }

@@ -8,6 +8,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,6 +23,7 @@ import com.playground.service.ClientStockService;
 import com.playground.service.StockService;
 import com.playground.service.TransactionService;
 
+import io.micrometer.common.util.StringUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.websocket.server.PathParam;
 
@@ -53,15 +55,15 @@ public class MainController {
 	@RequestMapping(value = "/trade", method = RequestMethod.POST)
 	@ResponseBody
 	public String trade(HttpServletRequest request, 
-			@PathParam(value="clientId") int clientId, 
-			@PathParam(value="stockId") int stockId,
-			@PathParam(value="quantity") BigDecimal quantity,
-			@PathParam(value="action") String action
+			@RequestParam Integer clientId, 
+			@RequestParam Integer stockId,
+			@RequestParam BigDecimal quantity,
+			@RequestParam String action
 			) {
 		
 		try {
 			System.out.println("trade| entry ...");
-			if(action.isBlank() || clientId <= 0 || stockId <= 0) {
+			if(action.isBlank() || clientId == null || stockId == null || BigDecimal.ZERO.equals(quantity)) {
 				System.out.println("trade| invalid parameters...");
 				return "Invalid request";
 			}
@@ -79,11 +81,11 @@ public class MainController {
 				return("Transaction fail");
 			}else {
 				System.out.println("trade| action not support");
-				return "false";
+				return("Transaction fail, action not support");
 			}
 		}catch(Exception e) {
-			
-			return "false";
+			e.printStackTrace();
+			return("Transaction fail");
 		}
 		
 	}
@@ -125,15 +127,23 @@ public class MainController {
 	 */
 	@RequestMapping(value = "/profile", method = RequestMethod.POST)
 	@ResponseBody
-	public String profile(HttpServletRequest request, @PathParam(value="clientId") int clientId) {
+	public String profile(HttpServletRequest request, @RequestParam Integer clientId) {
+		
+		System.out.println("profile| entry...");
+		if(clientId == null) {
+			System.out.println("profile| invalid parameters...");
+			return "Invalid request";
+		}
 		
 		try {
 			//Return client basic profile with wallet balance
+			System.out.println("profile| proceed to get client profile...");
 			Client client =  clientService.getClientById(clientId);
 			if(client != null) {
+				System.out.println("profile| exit...");
 				return toJSON(client);
 			}
-			return null;
+			return "Client not found";
 		}catch(Exception e) {
 			
 			return "false";
@@ -147,9 +157,9 @@ public class MainController {
 	 * @param clientId - Target Client's ID
 	 * @return 
 	 */
-	@RequestMapping(value = "/clientStock", method = RequestMethod.POST)
+	@RequestMapping(value = "/client/stock", method = RequestMethod.POST)
 	@ResponseBody
-	public String clientStock(HttpServletRequest request, @PathParam(value="clientId") int clientId) {
+	public String clientStock(HttpServletRequest request, @RequestParam int clientId) {
 		System.out.println("clientStock | entry ...");
 		try {
 			//Return stock list bought by client
@@ -166,24 +176,69 @@ public class MainController {
 		}
 	}
 	
-	@RequestMapping(value = "/clientTrans", method = RequestMethod.POST)
+	/**
+	 * This api is to get transactions based on the parameter giving
+	 * - when clientId is null and stockId is not null - return stock transactions list
+	 * - when clientId is not null and stockId is null - return client transactions list
+	 * - when clientId is not null and stockId is not null - return client transactions list on that particular stock
+	 * 
+	 * @param request
+	 * @param clientId - Target Client's ID
+	 * @param stockId - Target Stock's ID
+	 * @return
+	 */
+	@RequestMapping(value = "/transaction", method = RequestMethod.POST)
 	@ResponseBody
-	public String getClientTrans(HttpServletRequest request, @PathParam(value="clientId") int clientId) {
-		System.out.println("getClientTrans | entry ...");
+	public String getTrans(HttpServletRequest request, @RequestParam(required = false) Integer clientId, @RequestParam(required = false) Integer stockId) {
+		System.out.println("getTrans | entry ...");
+		
+		if(clientId == null && stockId == null) {
+			return "Either clientId or stockId must have value.";
+		}
 		try {
 			//Return stock list bought by client
-			List<Transaction> clientTrans = transService.getTransaction(clientId);
-			if(clientTrans != null) {
-				System.out.println("getClientTrans | client transactions found ...");
-				return toJSON(clientTrans);
+			List<Transaction> trans = transService.getTransaction(clientId, stockId);
+			if(trans != null) {
+				System.out.println("getTrans | transactions found ...");
+				return toJSON(trans);
 			}
-			System.out.println("getClientTrans | exit ...");
-			return "Failed to get client stocks";
+			System.out.println("getTrans | exit ...");
+			return "Transactions are empty";
 		}catch(Exception e) {
 			
 			return "false";
 		}
 	}
+	
+	/**
+	 * This api is to add new client
+	 * 
+	 * @param request
+	 * @param name - Client's name
+	 * @return Client ID
+	 */
+	@RequestMapping(value = "/client/add", method = RequestMethod.POST)
+	@ResponseBody
+	public String newClient(HttpServletRequest request, @RequestParam String name) {
+		
+		System.out.println("newClient| entry...");
+		if(StringUtils.isBlank(name)) {
+			System.out.println("newClient| invalid parameters...");
+			return "Invalid request";
+		}
+		
+		try {
+			//Return client basic profile with wallet balance
+			System.out.println("newClient| proceed to add client profile...");
+			Client client = clientService.saveClient(name);
+			System.out.println("newClient| exit...");
+			return "Add client successful, Client ID = " +client.getId();
+		}catch(Exception e) {
+			
+			return("Add client fail");
+		}
+	}
+	
 	private String toJSON(Object obj) {
 		Gson gson = new GsonBuilder().excludeFieldsWithModifiers(Modifier.TRANSIENT).create();
 		return gson.toJson(obj);

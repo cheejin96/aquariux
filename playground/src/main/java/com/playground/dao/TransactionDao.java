@@ -11,4 +11,8 @@ public interface TransactionDao extends JpaRepository<Transaction, Integer>{
 	
 	List<Transaction> findByClientId(int clientId);
 	
+	List<Transaction> findByStockId(int stockId);
+	
+	List<Transaction> findByClientIdAndStockId(int clientId, int stockId);
+	
 }
