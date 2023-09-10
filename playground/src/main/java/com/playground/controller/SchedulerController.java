@@ -85,9 +85,9 @@ public class SchedulerController {
 			
 			//binance stock attribute
 			BigDecimal binanceSellPrice = new BigDecimal(bs.getBidPrice());//sell
-			BigDecimal binanceSellQty = new BigDecimal(bs.getBidQty());//sell qty
+			BigDecimal binanceSellQty = new BigDecimal(bs.getBidQty());//the quantity of a security or asset a buyer is willing to purchase at the bid price
 			BigDecimal binanceBuyPrice = new BigDecimal(bs.getAskPrice());//buy
-			BigDecimal binanceBuyQty = new BigDecimal(bs.getAskQty());//buy qty
+			BigDecimal binanceBuyQty = new BigDecimal(bs.getAskQty());//the price that sellers are willing to accept in exchange for a crypto asset
 
 			//Get houbi stock to compare
 			HoubiStock hs = fromHoubi.stream().filter( s -> s.getSymbol().equalsIgnoreCase(bs.getSymbol())).findFirst().orElseGet(null);
@@ -107,6 +107,25 @@ public class SchedulerController {
 				//Stock found from Houbi
 				//Need to check which are best pricing
 				
+				//Get lowest sell price
+				if(binanceSellPrice.compareTo(hs.getBid()) == -1) { // binance sell price lower
+					//Sell
+					stock.setBidPrice(binanceSellPrice);
+					stock.setBidQty(binanceSellQty);
+					//Buy
+					stock.setAskPrice(binanceBuyPrice);
+					stock.setAskQty(binanceBuyQty);
+				}else {//houbi sell price lower
+					
+					//Sell
+					stock.setBidPrice(hs.getBid());
+					stock.setBidQty(hs.getBidSize());
+					//Buy
+					stock.setAskPrice(hs.getAsk());
+					stock.setAskQty(hs.getAskSize());
+				}
+				
+				/*
 				//Compare By Profit
 				//Binance
 				BigDecimal binanceSellProfit = binanceSellPrice.multiply(binanceSellQty);
@@ -136,6 +155,7 @@ public class SchedulerController {
 					stock.setAskPrice(binanceBuyPrice);
 					stock.setAskQty(binanceBuyQty);
 				}
+				*/
 			}
 			
 			stocks.add(stock);
